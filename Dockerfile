@@ -4,9 +4,9 @@ WORKDIR /go/src/app
 
 COPY . .
 
-RUN go get
+RUN go get -u ./...
 
-RUN go build -ldflags="-w -s" -o /go/bin/app
+RUN go build -C cmd/link-forge/ -ldflags="-w -s" -o /go/bin/app
 
 FROM alpine
 
