@@ -5,4 +5,4 @@ if [ -f .env ]; then
 fi
 
 cd sql/schema
-goose $GOOSE_DRIVER $DATABASE_URL up
+goose turso $DATABASE_URL up
