@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/binary"
 	"errors"
 	"log/slog"
-	"math/rand/v2"
 	"net/http"
 
 	"github.com/5aradise/link-forge/internal/database"
@@ -33,14 +34,20 @@ func NewURLService(l *slog.Logger, db URLStorage) *URLService {
 
 const (
 	aliasSeq    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789()@:%_+.~#?&="
-	aliasSeqLen = len(aliasSeq)
+	aliasSeqLen = uint64(len(aliasSeq))
 )
 
 func (s *URLService) generateAlias() string {
-	alias := ""
-
+	var (
+		alias       string
+		randomValue uint64
+	)
 	for range 6 {
-		alias += string(aliasSeq[rand.N(aliasSeqLen)])
+		err := binary.Read(rand.Reader, binary.LittleEndian, &randomValue)
+		if err != nil {
+			return "abcdef"
+		}
+		alias += string(aliasSeq[randomValue%aliasSeqLen])
 	}
 
 	return alias

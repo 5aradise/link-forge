@@ -35,5 +35,6 @@ jobs:
 
       - name: Run database migrations
         env:
+          GOOSE_DRIVER: ${{ secrets.GOOSE_DRIVER }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: ./scripts/migrateup.sh
