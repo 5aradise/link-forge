@@ -1,6 +1,6 @@
 # link-forge
 
-![Build Status](https://github.com/5aradise/learn-cicd-starter/actions/workflows/ci.yml/badge.svg)
+![Build Status](https://github.com/5aradise/link-forge/actions/workflows/ci.yml/badge.svg)
 
 ## Description
 

@@ -16,7 +16,7 @@ import (
 	"github.com/5aradise/link-forge/pkg/logger"
 	"github.com/5aradise/link-forge/pkg/middleware"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
@@ -30,14 +30,14 @@ func main() {
 	l := logger.New(os.Stdout, config.Cfg.Env)
 
 	// Connect to storage
-	conn, err := sql.Open("sqlite3", config.Cfg.DB.URL)
+	conn, err := sql.Open("libsql", config.Cfg.DB.URL)
 	if err != nil {
 		l.Error("sql open", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 	defer conn.Close()
 
-	_ = database.New(conn)
+	db := database.Create(conn)
 
 	// Set handlers
 	router := http.NewServeMux()
@@ -49,6 +49,10 @@ func main() {
 	// v1
 	v1 := http.NewServeMux()
 
+	URLService := handlers.NewURLService(l, db)
+	v1.HandleFunc("POST /urls", URLService.CreateURL)
+	v1.HandleFunc("GET /urls", URLService.ListURLs)
+
 	api.Handle("/v1/", http.StripPrefix("/v1", v1))
 
 	router.Handle("/api/", http.StripPrefix("/api", api))
@@ -56,9 +60,10 @@ func main() {
 	// Run server
 	server := httpserver.New(
 		middleware.Use(router,
+			middleware.Recoverer(l),
+			middleware.Cors(l),
 			middleware.RequestID(l),
 			middleware.Logger(l),
-			middleware.Recoverer(l),
 		),
 		httpserver.Port(config.Cfg.Server.Port),
 		httpserver.ReadTimeout(config.Cfg.Server.Timeout),

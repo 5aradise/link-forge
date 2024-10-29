@@ -16,7 +16,7 @@ type ctxKeyRequestID int
 const RequestIDKey ctxKeyRequestID = iota
 
 func RequestID(log LogInformer) Middleware {
-	log.Info("logger middleware enabled")
+	log.Info("request id middleware enabled")
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

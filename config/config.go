@@ -17,7 +17,7 @@ type (
 	}
 
 	DB struct {
-		URL string `envconfig:"DB_URL" required:"true"`
+		URL string `envconfig:"DATABASE_URL" required:"true"`
 	}
 
 	Server struct {
