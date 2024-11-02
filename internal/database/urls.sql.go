@@ -27,6 +27,31 @@ func (q *Queries) CreateURL(ctx context.Context, arg CreateURLParams) (Url, erro
 	return i, err
 }
 
+const deleteURLByAlias = `-- name: DeleteURLByAlias :one
+DELETE FROM urls
+WHERE alias = ?
+RETURNING id, alias, url
+`
+
+func (q *Queries) DeleteURLByAlias(ctx context.Context, alias string) (Url, error) {
+	row := q.db.QueryRowContext(ctx, deleteURLByAlias, alias)
+	var i Url
+	err := row.Scan(&i.ID, &i.Alias, &i.Url)
+	return i, err
+}
+
+const getURLByAlias = `-- name: GetURLByAlias :one
+SELECT id, alias, url FROM urls
+WHERE alias = ?
+`
+
+func (q *Queries) GetURLByAlias(ctx context.Context, alias string) (Url, error) {
+	row := q.db.QueryRowContext(ctx, getURLByAlias, alias)
+	var i Url
+	err := row.Scan(&i.ID, &i.Alias, &i.Url)
+	return i, err
+}
+
 const listURLs = `-- name: ListURLs :many
 SELECT id, alias, url FROM urls
 ORDER BY id

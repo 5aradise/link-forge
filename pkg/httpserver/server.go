@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
 	"net"
 	"net/http"
@@ -28,6 +29,12 @@ type Option func(*Server)
 func Port(port string) Option {
 	return func(s *Server) {
 		s.server.Addr = net.JoinHostPort("", port)
+	}
+}
+
+func TSLConfig(cfg *tls.Config) Option {
+	return func(s *Server) {
+		s.server.TLSConfig = cfg
 	}
 }
 

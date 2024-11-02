@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/5aradise/link-forge/internal/types"
@@ -34,7 +33,7 @@ func (db *DB) CreateURL(ctx context.Context, alias, url string) (types.URL, erro
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint") {
-			return types.URL{}, fmt.Errorf("%s: %w", op, ErrAliasExists)
+			return types.URL{}, util.OpWrap(op, ErrAliasExists)
 		}
 
 		return types.URL{}, util.OpWrap(op, err)
@@ -56,4 +55,35 @@ func (db *DB) ListURLs(ctx context.Context) ([]types.URL, error) {
 		urls = append(urls, URLtoTypes(dbURL))
 	}
 	return urls, nil
+}
+
+func (db *DB) GetURLByAlias(ctx context.Context, alias string) (types.URL, error) {
+	const op = "database.GetURLByAlias"
+
+	dbURL, err := db.q.GetURLByAlias(ctx, alias)
+	if err != nil {
+		if strings.Contains(err.Error(), "no rows") {
+			return types.URL{}, util.OpWrap(op, ErrURLUnfound)
+		}
+
+		return types.URL{}, util.OpWrap(op, err)
+	}
+
+	return URLtoTypes(dbURL), nil
+}
+
+func (db *DB) DeleteURLByAlias(ctx context.Context, alias string) (types.URL, error) {
+	const op = "database.DeleteURLByAlias"
+
+	dbURL, err := db.q.DeleteURLByAlias(ctx, alias)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "no rows") {
+			return types.URL{}, util.OpWrap(op, ErrURLUnfound)
+		}
+
+		return types.URL{}, util.OpWrap(op, err)
+	}
+
+	return URLtoTypes(dbURL), nil
 }

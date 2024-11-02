@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sync/atomic"
 )
@@ -15,8 +16,8 @@ type ctxKeyRequestID int
 
 const RequestIDKey ctxKeyRequestID = iota
 
-func RequestID(log LogInformer) Middleware {
-	log.Info("request id middleware enabled")
+func RequestID(l *slog.Logger) Middleware {
+	l.Info("request id middleware enabled")
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

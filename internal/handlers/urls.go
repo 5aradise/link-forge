@@ -15,9 +15,23 @@ import (
 	"github.com/5aradise/link-forge/pkg/middleware"
 )
 
+const BadLinkHTML = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Page Not Found | 404</title>
+  </head>
+  <body>
+    Bad link
+  </body>
+</html>`
+
 type URLStorage interface {
 	CreateURL(ctx context.Context, alias, url string) (types.URL, error)
 	ListURLs(ctx context.Context) ([]types.URL, error)
+	GetURLByAlias(ctx context.Context, alias string) (types.URL, error)
+	DeleteURLByAlias(ctx context.Context, alias string) (types.URL, error)
 }
 
 type URLService struct {
@@ -33,7 +47,7 @@ func NewURLService(l *slog.Logger, db URLStorage) *URLService {
 }
 
 const (
-	aliasSeq    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789()@:%_+.~#?&="
+	aliasSeq    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789()@:%_+.~#&="
 	aliasSeqLen = uint64(len(aliasSeq))
 )
 
@@ -142,10 +156,67 @@ func (s *URLService) ListURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	l.Info("url listed")
+	l.Info("urls listed")
 
 	writeJSONLog(w, http.StatusCreated, ListURLsResponse{
 		api.ResOK(),
 		urls,
 	}, l)
+}
+
+func (s *URLService) RedirectURL(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.url.redirect"
+
+	l := s.l.With(
+		slog.String("op", op),
+		slog.String("request_id", middleware.GetRequestID(r)),
+	)
+
+	alias := r.PathValue("alias")
+	if alias == "" {
+		panic("empty alias path value")
+	}
+
+	url, err := s.db.GetURLByAlias(r.Context(), alias)
+	if err != nil {
+		l.Error("failed to get url", util.SlErr(err))
+		err := api.WriteHTML(w, http.StatusBadRequest, BadLinkHTML)
+		if err != nil {
+			l.Error("failed to write response", util.SlErr(err))
+		}
+		return
+	}
+
+	l.Info("redirected to url", slog.String("url", url.Url))
+
+	http.Redirect(w, r, url.Url, http.StatusFound)
+}
+
+func (s *URLService) DeleteURL(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.url.redirect"
+
+	l := s.l.With(
+		slog.String("op", op),
+		slog.String("request_id", middleware.GetRequestID(r)),
+	)
+
+	alias := r.PathValue("alias")
+	if alias == "" {
+		panic("empty alias path value")
+	}
+
+	url, err := s.db.DeleteURLByAlias(r.Context(), alias)
+	if err != nil {
+		l.Error("failed to delete url", util.SlErr(err))
+		if errors.Is(err, database.ErrURLUnfound) {
+			writeJSONLog(w, http.StatusBadRequest, api.ResError("url with this alias unfound"), l)
+		} else {
+			writeJSONLog(w, http.StatusInternalServerError, api.ResError("internal error"), l)
+		}
+		return
+	}
+
+	l.Info("url deleted", slog.Any("url", url))
+
+	writeJSONLog(w, http.StatusCreated, api.ResOK(), l)
 }

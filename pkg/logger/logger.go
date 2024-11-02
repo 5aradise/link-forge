@@ -3,6 +3,8 @@ package logger
 import (
 	"io"
 	"log/slog"
+
+	"github.com/phsym/console-slog"
 )
 
 func New(w io.Writer, env string) *slog.Logger {
@@ -11,7 +13,7 @@ func New(w io.Writer, env string) *slog.Logger {
 	switch env {
 	case "local":
 		log = slog.New(
-			slog.NewTextHandler(w, &slog.HandlerOptions{Level: slog.LevelDebug}),
+			console.NewHandler(w, &console.HandlerOptions{Level: slog.LevelDebug}),
 		)
 	case "dev":
 		log = slog.New(

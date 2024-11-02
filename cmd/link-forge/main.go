@@ -53,6 +53,8 @@ func main() {
 	URLService := handlers.NewURLService(l, db)
 	v1.HandleFunc("POST /urls", URLService.CreateURL)
 	v1.HandleFunc("GET /urls", URLService.ListURLs)
+	v1.HandleFunc("GET /urls/{alias}", URLService.RedirectURL)
+	v1.HandleFunc("DELETE /urls/{alias}", URLService.DeleteURL)
 
 	api.Handle("/v1/", http.StripPrefix("/v1", v1))
 

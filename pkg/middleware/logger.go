@@ -16,8 +16,8 @@ func (ww *WriterWrapper) WriteHeader(statusCode int) {
 	ww.ResponseWriter.WriteHeader(statusCode)
 }
 
-func Logger(log LogInformer) Middleware {
-	log.Info("logger middleware enabled")
+func Logger(l *slog.Logger) Middleware {
+	l.Info("logger middleware enabled")
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +26,7 @@ func Logger(log LogInformer) Middleware {
 			next.ServeHTTP(ww, r)
 			duration := time.Since(beginReq)
 
-			log.Info("request info",
+			l.Info("request info",
 				slog.Any("status", ww.status),
 				slog.Duration("duration", duration),
 				slog.String("remote_addr", r.RemoteAddr),

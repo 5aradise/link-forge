@@ -1,9 +1,12 @@
 package middleware
 
-import "net/http"
+import (
+	"log/slog"
+	"net/http"
+)
 
-func Cors(log LogInformer) Middleware {
-	log.Info("cors middleware enabled")
+func Cors(l *slog.Logger) Middleware {
+	l.Info("cors middleware enabled")
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
