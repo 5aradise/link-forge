@@ -17,6 +17,7 @@ import (
 	"github.com/5aradise/link-forge/pkg/middleware"
 
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
+	// _ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -30,7 +31,7 @@ func main() {
 	l := logger.New(os.Stdout, config.Cfg.Env)
 
 	// Connect to storage
-	conn, err := sql.Open("libsql", config.Cfg.DB.URL)
+	conn, err := sql.Open("libsql", config.Cfg.DB.URL) // sqlite3
 	if err != nil {
 		l.Error("sql open", slog.String("error", err.Error()))
 		os.Exit(1)
