@@ -15,7 +15,7 @@ import (
 	"github.com/5aradise/link-forge/pkg/middleware"
 )
 
-const BadLinkHTML = `<!DOCTYPE html>
+const PageNotFoundHTML = `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -27,6 +27,7 @@ const BadLinkHTML = `<!DOCTYPE html>
   </body>
 </html>`
 
+//go:generate go run github.com/vektra/mockery/v2@v2.46.3 --name=URLStorage
 type URLStorage interface {
 	CreateURL(ctx context.Context, alias, url string) (types.URL, error)
 	ListURLs(ctx context.Context) ([]types.URL, error)
@@ -158,7 +159,7 @@ func (s *URLService) ListURLs(w http.ResponseWriter, r *http.Request) {
 
 	l.Info("urls listed")
 
-	writeJSONLog(w, http.StatusCreated, ListURLsResponse{
+	writeJSONLog(w, http.StatusOK, ListURLsResponse{
 		api.ResOK(),
 		urls,
 	}, l)
@@ -180,7 +181,7 @@ func (s *URLService) RedirectURL(w http.ResponseWriter, r *http.Request) {
 	url, err := s.db.GetURLByAlias(r.Context(), alias)
 	if err != nil {
 		l.Error("failed to get url", util.SlErr(err))
-		err := api.WriteHTML(w, http.StatusBadRequest, BadLinkHTML)
+		err := api.WriteHTML(w, http.StatusNotFound, PageNotFoundHTML)
 		if err != nil {
 			l.Error("failed to write response", util.SlErr(err))
 		}
@@ -218,5 +219,5 @@ func (s *URLService) DeleteURL(w http.ResponseWriter, r *http.Request) {
 
 	l.Info("url deleted", slog.Any("url", url))
 
-	writeJSONLog(w, http.StatusCreated, api.ResOK(), l)
+	writeJSONLog(w, http.StatusOK, api.ResOK(), l)
 }

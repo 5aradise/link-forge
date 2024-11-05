@@ -51,10 +51,10 @@ func main() {
 	v1 := http.NewServeMux()
 
 	URLService := handlers.NewURLService(l, db)
-	v1.HandleFunc("POST /urls", URLService.CreateURL)
-	v1.HandleFunc("GET /urls", URLService.ListURLs)
-	v1.HandleFunc("GET /urls/{alias}", URLService.RedirectURL)
-	v1.HandleFunc("DELETE /urls/{alias}", URLService.DeleteURL)
+	v1.HandleFunc(http.MethodPost+" /urls", URLService.CreateURL)
+	v1.HandleFunc(http.MethodGet+" /urls", URLService.ListURLs)
+	v1.HandleFunc(http.MethodGet+" /urls/{alias}", URLService.RedirectURL)
+	v1.HandleFunc(http.MethodDelete+" /urls/{alias}", URLService.DeleteURL)
 
 	api.Handle("/v1/", http.StripPrefix("/v1", v1))
 

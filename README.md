@@ -4,19 +4,23 @@
 
 ## Description
 
-RESTful API link shortener/customizer written in Go with ci/cd set up and using the best development approaches (code structuring, custom logging and middleware)
+RESTful API link shortener/customizer written in Go with ci/cd set up and using the best development approaches (code structuring, advanced testing with mocking, custom logging and middleware)
 
-It uses [Standart http.ServeMux](https://pkg.go.dev/net/http@go1.23.2#ServeMux) as the HTTP router.
+It uses [Standart http.ServeMux](https://pkg.go.dev/net/http@go1.23.2#ServeMux) as the HTTP router and [Turso](https://turso.tech)(SQLite) as the cloud database with [goose](https://github.com/pressly/goose) for migration and [sqlc](https://sqlc.dev/) for compile SQL queries.
 
 ## Features
 
 - Advanced custom logging
-- Automated testing, style and security checks
+- Automated testing with mocking, style and security checks
 
 ## Technologies
 
 - Go
-- SQLite
+- Testify
+- Mockery
+- Goose
+- Sqlc
+- SQLite(Turso)
 - Docker
 
 ## Requirements
