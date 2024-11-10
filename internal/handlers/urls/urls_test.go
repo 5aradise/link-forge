@@ -1,4 +1,4 @@
-package handlers
+package urls
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/5aradise/link-forge/internal/database"
-	"github.com/5aradise/link-forge/internal/handlers/mocks"
+	"github.com/5aradise/link-forge/internal/handlers/urls/mocks"
 	"github.com/5aradise/link-forge/internal/types"
 	"github.com/5aradise/link-forge/pkg/api"
 	"github.com/5aradise/link-forge/pkg/logger"
@@ -24,7 +24,7 @@ func TestURLHandlers(t *testing.T) {
 	lMock := logger.NewMock()
 	sMock := mocks.NewURLStorage(t)
 
-	s := NewURLService(lMock, sMock)
+	s, _ := NewService(lMock, sMock, 3)
 
 	r := http.NewServeMux()
 	r.HandleFunc(http.MethodPost+" /", s.CreateURL)
@@ -33,73 +33,115 @@ func TestURLHandlers(t *testing.T) {
 	r.HandleFunc(http.MethodDelete+" /{alias}", s.DeleteURL)
 
 	t.Run("Create", func(t *testing.T) {
-		cases := map[string]struct {
+		cases := []struct {
+			name string
 			req  CreateURLRequest
 			res  CreateURLResponse
 			code int
 		}{
-			"Normal": {
+			{
+				name: "Normal",
 				req: CreateURLRequest{
 					URL:   "http://test.com",
-					Alias: "test",
+					Alias: "normal",
 				},
 				res: CreateURLResponse{
 					Response: api.ResOK(),
-					Alias:    "test",
+					Alias:    "normal",
 				},
 				code: http.StatusCreated,
 			},
-			"Same_alias": {
+			{
+				name: "Same_alias",
 				req: CreateURLRequest{
 					URL:   "http://test.com",
-					Alias: "same",
+					Alias: "identical",
 				},
 				res: CreateURLResponse{
 					Response: api.ResError("alias already exists"),
 				},
 				code: http.StatusBadRequest,
 			},
-			"Empty_url": {
+			{
+				name: "Empty_url",
 				req: CreateURLRequest{
-					Alias: "test",
+					Alias: "empty",
 				},
 				res: CreateURLResponse{
 					Response: api.ResError("empty url field"),
 				},
 				code: http.StatusBadRequest,
 			},
-			"Invalid_url": {
+			{
+				name: "Invalid_url",
 				req: CreateURLRequest{
 					URL:   "test.com",
-					Alias: "test",
+					Alias: "invalid",
 				},
 				res: CreateURLResponse{
 					Response: api.ResError("invalid url"),
 				},
 				code: http.StatusBadRequest,
 			},
-			// "Empty alias": {
-			// 	req: CreateURLRequest{
-			// 		URL:   "http://test.com",
-			// 		Alias: "",
-			// 	},
-			// 	res: CreateURLResponse{
-			// 		Response: api.ResOK(),
-			// 		Alias:    "a",
-			// 	},
-			// },
+			{
+				name: "short_alias",
+				req: CreateURLRequest{
+					URL:   "http://test.com",
+					Alias: "shrt",
+				},
+				res: CreateURLResponse{
+					Response: api.ResError("alias length is too short"),
+				},
+				code: http.StatusBadRequest,
+			},
+			{
+				name: "Empty_alias_1",
+				req: CreateURLRequest{
+					URL:   "http://test.com",
+					Alias: "",
+				},
+				res: CreateURLResponse{
+					Response: api.ResOK(),
+					Alias:    "d",
+				},
+				code: http.StatusCreated,
+			},
+			{
+				name: "Empty_alias_2",
+				req: CreateURLRequest{
+					URL:   "http://test.com",
+					Alias: "",
+				},
+				res: CreateURLResponse{
+					Response: api.ResOK(),
+					Alias:    "e",
+				},
+				code: http.StatusCreated,
+			},
+			{
+				name: "Empty_alias_3",
+				req: CreateURLRequest{
+					URL:   "http://test.com",
+					Alias: "",
+				},
+				res: CreateURLResponse{
+					Response: api.ResOK(),
+					Alias:    "f",
+				},
+				code: http.StatusCreated,
+			},
 		}
 
 		sMock.On("CreateURL", context.Background(), mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 			Return(func(ctx context.Context, alias string, url string) (types.URL, error) {
-				if alias == "same" {
+				if alias == "identical" {
 					return types.URL{}, database.ErrAliasExists
 				}
 				return types.URL{Id: 1, Alias: alias, Url: url}, nil
 			})
 
-		for name, tc := range cases {
-			t.Run(name, func(t *testing.T) {
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
 				assert := assert.New(t)
 				require := require.New(t)
 
@@ -120,11 +162,13 @@ func TestURLHandlers(t *testing.T) {
 	})
 
 	t.Run("List", func(t *testing.T) {
-		cases := map[string]struct {
+		cases := []struct {
+			name string
 			res  ListURLsResponse
 			code int
 		}{
-			"Normal": {
+			{
+				name: "Normal",
 				res: ListURLsResponse{
 					Response: api.ResOK(),
 					URLs: []types.URL{
@@ -142,8 +186,8 @@ func TestURLHandlers(t *testing.T) {
 				{Id: 2, Alias: "b", Url: "http://test2.com"},
 				{Id: 3, Alias: "c", Url: "http://test3.com"}}, nil)
 
-		for name, tc := range cases {
-			t.Run(name, func(t *testing.T) {
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
 				assert := assert.New(t)
 				require := require.New(t)
 
@@ -161,17 +205,20 @@ func TestURLHandlers(t *testing.T) {
 	})
 
 	t.Run("Redirect", func(t *testing.T) {
-		cases := map[string]struct {
+		cases := []struct {
+			name string
 			path string
 			code int
 			url  string
 		}{
-			"Normal": {
+			{
+				name: "Normal",
 				path: "alias",
 				url:  "http://test.com/",
 				code: http.StatusFound,
 			},
-			"Wrong_alias": {
+			{
+				name: "Wrong_alias",
 				path: "wrong",
 				url:  "",
 				code: http.StatusNotFound,
@@ -183,8 +230,8 @@ func TestURLHandlers(t *testing.T) {
 		sMock.On("GetURLByAlias", context.Background(), "wrong").
 			Return(types.URL{}, database.ErrURLUnfound)
 
-		for name, tc := range cases {
-			t.Run(name, func(t *testing.T) {
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
 				assert := assert.New(t)
 
 				code, _, head, _ := serveHTTP(r, http.MethodGet, tc.path, []byte{})
@@ -197,17 +244,20 @@ func TestURLHandlers(t *testing.T) {
 	})
 
 	t.Run("Delete", func(t *testing.T) {
-		cases := map[string]struct {
+		cases := []struct {
+			name string
 			path string
 			code int
 			res  any
 		}{
-			"Normal": {
+			{
+				name: "Normal",
 				path: "alias",
 				code: http.StatusOK,
 				res:  api.ResOK(),
 			},
-			"Wrong_alias": {
+			{
+				name: "Wrong_alias",
 				path: "unfound",
 				code: http.StatusBadRequest,
 				res:  api.ResError("url with this alias unfound"),
@@ -219,8 +269,8 @@ func TestURLHandlers(t *testing.T) {
 		sMock.On("DeleteURLByAlias", context.Background(), "unfound").
 			Return(types.URL{}, database.ErrURLUnfound)
 
-		for name, tc := range cases {
-			t.Run(name, func(t *testing.T) {
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
 				assert := assert.New(t)
 				require := require.New(t)
 

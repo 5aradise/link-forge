@@ -4,6 +4,11 @@
 
 package database
 
+type State struct {
+	ID         int64
+	AliasCount int64
+}
+
 type Url struct {
 	ID    int64
 	Alias string

@@ -49,11 +49,10 @@ conn, err := sql.Open("libsql", config.Cfg.DB.URL)   // ->
 conn, err := sql.Open("sqlite3", config.Cfg.DB.URL)  // <-
 ```
 
-### Install dependensies:
+### Install dependencies:
 
 ```bash
-go get -u ./...
-go mod tidy
+go mod download
 ```
 
 ### In `scripts/`:

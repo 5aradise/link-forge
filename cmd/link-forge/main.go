@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"log/slog"
@@ -12,6 +13,8 @@ import (
 	"github.com/5aradise/link-forge/config"
 	"github.com/5aradise/link-forge/internal/database"
 	"github.com/5aradise/link-forge/internal/handlers"
+	"github.com/5aradise/link-forge/internal/handlers/urls"
+	"github.com/5aradise/link-forge/internal/util"
 	"github.com/5aradise/link-forge/pkg/httpserver"
 	"github.com/5aradise/link-forge/pkg/logger"
 	"github.com/5aradise/link-forge/pkg/middleware"
@@ -33,7 +36,7 @@ func main() {
 	// Connect to storage
 	conn, err := sql.Open("libsql", config.Cfg.DB.URL) // sqlite3
 	if err != nil {
-		l.Error("sql open", slog.String("error", err.Error()))
+		l.Error("can't open sql", util.SlErr(err))
 		os.Exit(1)
 	}
 	defer conn.Close()
@@ -50,7 +53,17 @@ func main() {
 	// v1
 	v1 := http.NewServeMux()
 
-	URLService := handlers.NewURLService(l, db)
+	aliasCount, err := db.LoadState(context.Background())
+	if err != nil {
+		l.Error("can't load state", util.SlErr(err))
+		os.Exit(1)
+	}
+
+	URLService, err := urls.NewService(l, db, aliasCount)
+	if err != nil {
+		l.Error("can't create url service", util.SlErr(err))
+		os.Exit(1)
+	}
 	v1.HandleFunc(http.MethodPost+" /urls", URLService.CreateURL)
 	v1.HandleFunc(http.MethodGet+" /urls", URLService.ListURLs)
 	v1.HandleFunc(http.MethodGet+" /urls/{alias}", URLService.RedirectURL)
@@ -85,12 +98,18 @@ func main() {
 	case s := <-interrupt:
 		l.Error("signal interrupt", slog.String("error", s.String()))
 	case err := <-server.Notify():
-		l.Error("server notify", slog.String("error", err.Error()))
+		l.Error("server notify", util.SlErr(err))
 	}
 
 	// Shutdown server
 	err = server.Shutdown()
 	if err != nil {
-		l.Info("server shutdown", slog.String("error", err.Error()))
+		l.Error("can't shutdown server", util.SlErr(err))
+	}
+
+	aliasCount = URLService.AliasCount()
+	err = db.StoreState(context.Background(), aliasCount)
+	if err != nil {
+		l.Error("can't store state", util.SlErr(err), slog.Uint64("alias count", uint64(aliasCount)))
 	}
 }

@@ -4,7 +4,7 @@ WORKDIR /go/src/app
 
 COPY . .
 
-RUN go get -u ./...
+RUN go mod download
 
 RUN go build -C cmd/link-forge/ -ldflags="-w -s" -o /go/bin/app
 

@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"math"
 	"strings"
 
 	"github.com/5aradise/link-forge/internal/types"
@@ -76,7 +77,6 @@ func (db *DB) DeleteURLByAlias(ctx context.Context, alias string) (types.URL, er
 	const op = "database.DeleteURLByAlias"
 
 	dbURL, err := db.q.DeleteURLByAlias(ctx, alias)
-
 	if err != nil {
 		if strings.Contains(err.Error(), "no rows") {
 			return types.URL{}, util.OpWrap(op, ErrURLUnfound)
@@ -86,4 +86,28 @@ func (db *DB) DeleteURLByAlias(ctx context.Context, alias string) (types.URL, er
 	}
 
 	return URLtoTypes(dbURL), nil
+}
+
+func (db *DB) LoadState(ctx context.Context) (uint32, error) {
+	const op = "database.LoadState"
+
+	aliasCount, err := db.q.LoadState(ctx)
+	if err != nil {
+		return 0, util.OpWrap(op, err)
+	}
+	if aliasCount < 0 || aliasCount > math.MaxUint32 {
+		return 0, util.OpWrap(op, ErrIntOverflow)
+	}
+
+	return uint32(aliasCount), nil
+}
+
+func (db *DB) StoreState(ctx context.Context, aliasCount uint32) error {
+	const op = "database.StoreState"
+
+	err := db.q.StoreState(ctx, int64(aliasCount))
+	if err != nil {
+		return util.OpWrap(op, err)
+	}
+	return nil
 }
